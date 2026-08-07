@@ -23,6 +23,7 @@ import { sendImage, sendFile } from "./discord/attachments.js";
 import { listEmojis, resolveEmojiPlaceholders } from "./discord/emojis.js";
 import { listStickers, sendSticker } from "./discord/stickers.js";
 import { listServers, listChannels, setStatus } from "./discord/meta.js";
+import { createChannel } from "./discord/management.js";
 import { sendVoiceNote } from "./discord/voice.js";
 
 const cfg: RuntimeConfig = loadConfig();
@@ -172,6 +173,29 @@ const baseTools = [
       properties: { server: { type: "string" } },
     },
   },
+{
+  name: "create_channel",
+  description: "Create a text, voice, or category channel in a Discord server.",
+  inputSchema: {
+    type: "object",
+    properties: {
+      server: {
+        type: "string",
+        description: "Server name or ID",
+      },
+      name: {
+        type: "string",
+        description: "Name of the new channel",
+      },
+      type: {
+        type: "string",
+        enum: ["text", "voice", "category"],
+        description: "Channel type. Defaults to text.",
+      },
+    },
+    required: ["name"],
+  },
+},
   {
     name: "list_emojis",
     description: "List custom emojis available in a server.",
@@ -293,6 +317,14 @@ const toolHandler = async (req: any) => {
         return ok(JSON.stringify(await listServers(), null, 2));
       case "list_channels":
         return ok(JSON.stringify(await listChannels({ ...a, fallbackGuildId }), null, 2));
+case "create_channel":
+  return ok(
+    JSON.stringify(
+      await createChannel({ ...a, fallbackGuildId }),
+      null,
+      2
+    )
+  );
       case "list_emojis":
         return ok(JSON.stringify(await listEmojis({ ...a, fallbackGuildId }), null, 2));
       case "list_stickers":
