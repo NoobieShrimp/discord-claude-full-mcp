@@ -384,7 +384,8 @@ async function main() {
   const mode = process.env.MCP_TRANSPORT || "stdio";
 
   if (mode === "sse" || mode === "http") {
-    const port = parseInt(process.env.MCP_PORT || "3001", 10);
+    // Railway injects PORT dynamically. MCP_PORT remains available for local use.
+    const port = parseInt(process.env.PORT || process.env.MCP_PORT || "3001", 10);
     const app = express();
     app.use(express.json());
 
@@ -455,7 +456,7 @@ async function main() {
       });
     });
 
-    app.listen(port, () => {
+    app.listen(port, "0.0.0.0", () => {
       console.error(`[mcp] discord-claude-full-mcp running on Streamable HTTP — http://localhost:${port}/mcp`);
       console.error(`[mcp] health check: http://localhost:${port}/health`);
     });

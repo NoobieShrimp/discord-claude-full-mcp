@@ -66,13 +66,24 @@ export function loadConfig(): RuntimeConfig {
   }
 
   const file = loadConfigFile();
-  const merged: ElevenLabsConfig = { ...DEFAULTS, ...(file.elevenlabs ?? {}) };
+  const merged: ElevenLabsConfig = {
+    ...DEFAULTS,
+    ...(file.elevenlabs ?? {}),
+    ...(process.env.ELEVENLABS_VOICE_ID
+      ? { voiceId: process.env.ELEVENLABS_VOICE_ID }
+      : {}),
+  };
 
   return {
     discordToken: token,
     elevenLabsApiKey: process.env.ELEVENLABS_API_KEY?.trim() || null,
     elevenlabs: merged,
-    defaults: file.defaults ?? {},
+    defaults: {
+      ...(file.defaults ?? {}),
+      ...(process.env.DISCORD_GUILD_ID
+        ? { guildId: process.env.DISCORD_GUILD_ID }
+        : {}),
+    },
   };
 }
 
