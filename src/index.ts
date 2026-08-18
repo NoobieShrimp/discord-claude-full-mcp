@@ -7,6 +7,7 @@ import {
   ListToolsRequestSchema,
 } from "@modelcontextprotocol/sdk/types.js";
 import express from "express";
+import { timingSafeEqual } from "node:crypto";
 
 import { loadConfig, isElevenLabsReady, RuntimeConfig } from "./config.js";
 import { createClient } from "./discord/client.js";
@@ -386,6 +387,10 @@ async function main() {
   if (mode === "sse" || mode === "http") {
     // Railway injects PORT dynamically. MCP_PORT remains available for local use.
     const port = parseInt(process.env.PORT || process.env.MCP_PORT || "3001", 10);
+    const mcpAuthToken = process.env.MCP_AUTH_TOKEN;
+    if (!mcpAuthToken) {
+      throw new Error("MCP_AUTH_TOKEN is required when MCP_TRANSPORT is sse or http");
+    }
     const app = express();
     app.use(express.json());
 
@@ -393,10 +398,28 @@ async function main() {
     app.use((_req, res, next) => {
       res.setHeader("Access-Control-Allow-Origin", "*");
       res.setHeader("Access-Control-Allow-Methods", "GET, POST, DELETE, OPTIONS");
-      res.setHeader("Access-Control-Allow-Headers", "Content-Type, mcp-session-id");
+      res.setHeader("Access-Control-Allow-Headers", "Authorization, Content-Type, mcp-session-id");
       res.setHeader("Access-Control-Expose-Headers", "mcp-session-id");
       if (_req.method === "OPTIONS") {
         res.status(204).end();
+        return;
+      }
+      next();
+    });
+
+    // Keep the public MCP endpoint private to clients holding Lumi's bearer token.
+    app.use("/mcp", (req, res, next) => {
+      const authorization = req.header("authorization") || "";
+      const expected = `Bearer ${mcpAuthToken}`;
+      const suppliedBuffer = Buffer.from(authorization);
+      const expectedBuffer = Buffer.from(expected);
+      const authorized =
+        suppliedBuffer.length === expectedBuffer.length &&
+        timingSafeEqual(suppliedBuffer, expectedBuffer);
+
+      if (!authorized) {
+        res.setHeader("WWW-Authenticate", "Bearer");
+        res.status(401).json({ error: "Unauthorized" });
         return;
       }
       next();
