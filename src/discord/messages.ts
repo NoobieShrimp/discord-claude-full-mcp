@@ -50,6 +50,24 @@ export async function readMessages(opts: {
   return Array.from(fetched.values()).map(formatMessage);
 }
 
+/**
+ * Open (or resolve) the bot's DM channel with a Discord user and return its
+ * recent messages using the same rich representation as readMessages.
+ */
+export async function readDirectMessages(opts: {
+  userId: string;
+  limit?: number;
+}) {
+  const client = getClient();
+  const user = await client.users.fetch(opts.userId);
+  if (!user) throw new Error(`User with ID ${opts.userId} not found`);
+
+  const dmChannel = await user.createDM();
+  const limit = Math.min(Math.max(opts.limit ?? 50, 1), 100);
+  const fetched = await dmChannel.messages.fetch({ limit });
+  return Array.from(fetched.values()).map(formatMessage);
+}
+
 export function formatMessage(msg: Message) {
   return {
     id: msg.id,

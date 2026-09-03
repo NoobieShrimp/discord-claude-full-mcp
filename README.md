@@ -16,6 +16,7 @@ A full-featured Discord MCP server for Claude (and any MCP-compatible client). S
 
 - `send_message` — text, with `:emoji_name:` shortcuts that resolve to your server's custom emojis, and optional reply-to
 - `send_direct_message` — send a DM to any Discord user by user ID
+- `read_direct_messages` — read rich DM history with a user by user ID
 - `read_messages` — full message metadata (attachments, embeds, stickers, reactions, replies)
 - `edit_message`, `delete_message`, `react_to_message`, `set_typing`
 - `send_image`, `send_file` — local path or URL

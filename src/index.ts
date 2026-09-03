@@ -19,6 +19,7 @@ import {
   reactToMessage,
   setTyping,
   sendDirectMessage,
+  readDirectMessages,
 } from "./discord/messages.js";
 import { sendImage, sendFile } from "./discord/attachments.js";
 import { listEmojis, resolveEmojiPlaceholders } from "./discord/emojis.js";
@@ -240,6 +241,19 @@ const baseTools = [
       required: ["userId", "message"],
     },
   },
+  {
+    name: "read_direct_messages",
+    description:
+      "Read recent direct messages exchanged with a Discord user. Includes attachments, GIF embeds, stickers, reactions, and reply references.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        userId: { type: "string", description: "Discord user ID (numeric)" },
+        limit: { type: "number", description: "1-100, default 50" },
+      },
+      required: ["userId"],
+    },
+  },
 ];
 
 const voiceTool = {
@@ -355,6 +369,13 @@ case "create_channel":
           content: a.message,
         });
         return ok(`DM sent to ${r.recipient} (id: ${r.id})`);
+      }
+      case "read_direct_messages": {
+        const msgs = await readDirectMessages({
+          userId: a.userId,
+          limit: a.limit,
+        });
+        return ok(JSON.stringify(msgs, null, 2));
       }
       default:
         return err(`Unknown tool: ${name}`);
