@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 import { Server } from "@modelcontextprotocol/sdk/server/index.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
-import { StreamableHTTPServerTransport } from "@modelcontextprotocol/sdk/server/streamableHttp.js";
+import { WebStandardStreamableHTTPServerTransport } from "@modelcontextprotocol/sdk/server/webStandardStreamableHttp.js";
 import {
   CallToolRequestSchema,
   ListToolsRequestSchema,
@@ -463,7 +463,7 @@ async function main() {
     app.post("/mcp", async (req, res) => {
       try {
         const mcpServer = createMcpServer();
-        const transport = new StreamableHTTPServerTransport({
+        const transport = new WebStandardStreamableHTTPServerTransport({
           sessionIdGenerator: undefined,
           // Return request/response messages as JSON instead of SSE. Some
           // clients use a strict HTTP chunk parser and reject the streamed
@@ -475,7 +475,21 @@ async function main() {
           mcpServer.close();
         });
         await mcpServer.connect(transport);
-        await transport.handleRequest(req, res, req.body);
+        const requestUrl = `${req.protocol}://${req.get("host")}${req.originalUrl}`;
+        const webRequest = new Request(requestUrl, {
+          method: req.method,
+          headers: req.headers as HeadersInit,
+        });
+        const webResponse = await transport.handleRequest(webRequest, {
+          parsedBody: req.body,
+        });
+        const responseBody = Buffer.from(await webResponse.arrayBuffer());
+        webResponse.headers.forEach((value, name) => res.setHeader(name, value));
+        // Buffer the small JSON-RPC response so Node emits Content-Length instead
+        // of chunked encoding. Railway's edge currently mangles that hop-by-hop
+        // header, which strict MCP clients correctly reject.
+        res.setHeader("Content-Length", responseBody.length);
+        res.status(webResponse.status).end(responseBody);
       } catch (e) {
         console.error("[mcp] Error handling request:", e);
         if (!res.headersSent) {
