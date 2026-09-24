@@ -429,7 +429,9 @@ async function main() {
     });
 
     // Keep the public MCP endpoint private to clients holding Lumi's bearer token.
-    app.use("/mcp", (req, res, next) => {
+    const mcpPaths = ["/mcp", "/lumi-rpc"];
+
+    app.use(mcpPaths, (req, res, next) => {
       const authorization = req.header("authorization") || "";
       const expected = `Bearer ${mcpAuthToken}`;
       const suppliedBuffer = Buffer.from(authorization);
@@ -460,7 +462,7 @@ async function main() {
     }
 
     // Stateless mode: new transport + server per request
-    app.post("/mcp", async (req, res) => {
+    app.post(mcpPaths, async (req, res) => {
       try {
         const mcpServer = createMcpServer();
         const transport = new WebStandardStreamableHTTPServerTransport({
@@ -504,11 +506,11 @@ async function main() {
       }
     });
 
-    app.get("/mcp", (_req, res) => {
+    app.get(mcpPaths, (_req, res) => {
       res.writeHead(405).end("Method Not Allowed — use POST");
     });
 
-    app.delete("/mcp", (_req, res) => {
+    app.delete(mcpPaths, (_req, res) => {
       res.writeHead(405).end("Method Not Allowed");
     });
 
@@ -521,7 +523,7 @@ async function main() {
     });
 
     app.listen(port, "0.0.0.0", () => {
-      console.error(`[mcp] discord-claude-full-mcp running on Streamable HTTP — http://localhost:${port}/mcp`);
+      console.error(`[mcp] discord-claude-full-mcp running on Streamable HTTP — http://localhost:${port}/lumi-rpc`);
       console.error(`[mcp] health check: http://localhost:${port}/health`);
     });
   } else {
