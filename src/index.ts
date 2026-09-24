@@ -483,13 +483,15 @@ async function main() {
         const webResponse = await transport.handleRequest(webRequest, {
           parsedBody: req.body,
         });
-        const responseBody = Buffer.from(await webResponse.arrayBuffer());
-        webResponse.headers.forEach((value, name) => res.setHeader(name, value));
-        // Buffer the small JSON-RPC response so Node emits Content-Length instead
-        // of chunked encoding. Railway's edge currently mangles that hop-by-hop
-        // header, which strict MCP clients correctly reject.
-        res.setHeader("Content-Length", responseBody.length);
-        res.status(webResponse.status).end(responseBody);
+        const responseJson = await webResponse.json();
+        const sessionId = webResponse.headers.get("mcp-session-id");
+        if (sessionId) {
+          res.setHeader("mcp-session-id", sessionId);
+        }
+        // Let Express serialize the completed JSON-RPC result. Its JSON writer
+        // supplies an exact Content-Length, avoiding Railway's broken handling
+        // of an otherwise unframed response body.
+        res.status(webResponse.status).json(responseJson);
       } catch (e) {
         console.error("[mcp] Error handling request:", e);
         if (!res.headersSent) {
