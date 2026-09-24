@@ -465,6 +465,10 @@ async function main() {
         const mcpServer = createMcpServer();
         const transport = new StreamableHTTPServerTransport({
           sessionIdGenerator: undefined,
+          // Return request/response messages as JSON instead of SSE. Some
+          // clients use a strict HTTP chunk parser and reject the streamed
+          // response before the MCP initialization handshake completes.
+          enableJsonResponse: true,
         });
         res.on("close", () => {
           transport.close();
