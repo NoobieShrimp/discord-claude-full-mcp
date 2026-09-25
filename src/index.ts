@@ -494,9 +494,14 @@ async function main() {
           // MCP notifications such as notifications/initialized have no JSON-RPC
           // response body. Railway's edge forwards response bytes unchanged but
           // replaces Content-Length with Transfer-Encoding: chunked. Supplying
-          // the zero-length chunk terminator keeps strict HTTP clients from
-          // waiting for chunk framing that the proxy otherwise never emits.
-          const compatibilityBody = "0\r\n\r\n";
+          // a complete pre-framed JSON-RPC acknowledgement keeps strict HTTP
+          // clients from waiting for chunk framing that the proxy never emits.
+          const acknowledgement = JSON.stringify({
+            jsonrpc: "2.0",
+            id: null,
+            result: {},
+          });
+          const compatibilityBody = `${Buffer.byteLength(acknowledgement).toString(16)}\r\n${acknowledgement}\r\n0\r\n\r\n`;
           res.removeHeader("transfer-encoding");
           res.setHeader("content-type", "application/json; charset=utf-8");
           res.setHeader("content-length", Buffer.byteLength(compatibilityBody));
