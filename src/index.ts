@@ -492,17 +492,13 @@ async function main() {
         const responseBody = await webResponse.text();
         if (!responseBody) {
           // MCP notifications such as notifications/initialized have no JSON-RPC
-          // response body. Railway rewrites empty responses to a malformed
-          // chunked response without a terminating chunk, so send a harmless
-          // JSON object to give the proxy a concrete, correctly framed body.
-          const compatibilityBody = "{}";
+          // response body. Railway's edge corrupts empty 202 responses by advertising an
+          // unterminated chunked body. A 204 response explicitly has no body,
+          // so intermediaries and clients complete it without body framing.
           res.removeHeader("transfer-encoding");
-          res.setHeader("content-type", "application/json; charset=utf-8");
-          res.setHeader("content-length", Buffer.byteLength(compatibilityBody));
-          // Railway's edge corrupts 202 responses even with Content-Length set,
-          // while preserving fixed-length 200 responses. Any successful 2xx
-          // acknowledges an HTTP notification for the clients we support.
-          res.status(200).send(compatibilityBody);
+          res.removeHeader("content-type");
+          res.removeHeader("content-length");
+          res.status(204).end();
           return;
         }
 
