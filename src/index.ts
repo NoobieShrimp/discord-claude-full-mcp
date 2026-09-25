@@ -495,7 +495,11 @@ async function main() {
           // response body. Railway rewrites empty responses to a malformed
           // chunked response without a terminating chunk, so send a harmless
           // JSON object to give the proxy a concrete, correctly framed body.
-          res.status(webResponse.status).json({});
+          const compatibilityBody = "{}";
+          res.removeHeader("transfer-encoding");
+          res.setHeader("content-type", "application/json; charset=utf-8");
+          res.setHeader("content-length", Buffer.byteLength(compatibilityBody));
+          res.status(webResponse.status).end(compatibilityBody);
           return;
         }
 
