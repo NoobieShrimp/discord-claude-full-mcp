@@ -498,7 +498,7 @@ async function main() {
           // waiting for chunk framing that the proxy otherwise never emits.
           const compatibilityBody = "0\r\n\r\n";
           res.removeHeader("transfer-encoding");
-          res.setHeader("content-type", "application/octet-stream");
+          res.setHeader("content-type", "application/json; charset=utf-8");
           res.setHeader("content-length", Buffer.byteLength(compatibilityBody));
           res.setHeader("cache-control", "no-transform");
           res.status(200).send(compatibilityBody);
