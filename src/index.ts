@@ -493,7 +493,11 @@ async function main() {
         if (!responseBody) {
           // MCP notifications such as notifications/initialized have no JSON-RPC
           // response body. Preserve the transport's empty 202/204 response
-          // instead of attempting to parse JSON and closing the channel.
+          // instead of attempting to parse JSON and closing the channel. Set an
+          // explicit zero length because Railway otherwise advertises a body and
+          // closes the connection before one arrives.
+          res.removeHeader("transfer-encoding");
+          res.setHeader("content-length", "0");
           res.status(webResponse.status).end();
           return;
         }
