@@ -502,7 +502,7 @@ async function main() {
           // Railway's edge corrupts 202 responses even with Content-Length set,
           // while preserving fixed-length 200 responses. Any successful 2xx
           // acknowledges an HTTP notification for the clients we support.
-          res.status(200).end(compatibilityBody);
+          res.status(200).send(compatibilityBody);
           return;
         }
 
