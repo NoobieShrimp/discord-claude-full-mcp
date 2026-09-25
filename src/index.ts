@@ -492,13 +492,10 @@ async function main() {
         const responseBody = await webResponse.text();
         if (!responseBody) {
           // MCP notifications such as notifications/initialized have no JSON-RPC
-          // response body. Preserve the transport's empty 202/204 response
-          // instead of attempting to parse JSON and closing the channel. Set an
-          // explicit zero length because Railway otherwise advertises a body and
-          // closes the connection before one arrives.
-          res.removeHeader("transfer-encoding");
-          res.setHeader("content-length", "0");
-          res.status(webResponse.status).end();
+          // response body. Railway rewrites empty responses to a malformed
+          // chunked response without a terminating chunk, so send a harmless
+          // JSON object to give the proxy a concrete, correctly framed body.
+          res.status(webResponse.status).json({});
           return;
         }
 
