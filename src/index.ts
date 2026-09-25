@@ -514,6 +514,15 @@ async function main() {
         if (contentType) {
           res.setHeader("content-type", contentType);
         }
+        const responseLength = Buffer.byteLength(responseBody);
+        if (responseLength >= 1024) {
+          // Railway switches larger JSON responses to a broken chunked path:
+          // it forwards the bytes unchanged but leaves Transfer-Encoding set.
+          // Pre-frame one chunk so strict clients decode the original JSON.
+          const framedBody = `${responseLength.toString(16)}\r\n${responseBody}\r\n0\r\n\r\n`;
+          res.status(webResponse.status).send(framedBody);
+          return;
+        }
         // Let Express send the completed body with an exact Content-Length,
         // avoiding Railway's broken handling of an unframed streamed body.
         res.status(webResponse.status).send(responseBody);
