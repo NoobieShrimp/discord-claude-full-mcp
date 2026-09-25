@@ -498,7 +498,7 @@ async function main() {
           // clients from waiting for chunk framing that the proxy never emits.
           const acknowledgement = JSON.stringify({
             jsonrpc: "2.0",
-            id: null,
+            id: 0,
             result: {},
           });
           const compatibilityBody = `${Buffer.byteLength(acknowledgement).toString(16)}\r\n${acknowledgement}\r\n0\r\n\r\n`;
