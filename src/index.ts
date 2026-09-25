@@ -515,10 +515,12 @@ async function main() {
           res.setHeader("content-type", contentType);
         }
         const responseLength = Buffer.byteLength(responseBody);
-        if (responseLength >= 1024) {
-          // Railway switches larger JSON responses to a broken chunked path:
-          // it forwards the bytes unchanged but leaves Transfer-Encoding set.
-          // Pre-frame one chunk so strict clients decode the original JSON.
+        const requestMethod = req.body?.method;
+        if (requestMethod !== "initialize") {
+          // Railway's edge rewrites MCP responses after initialization to use
+          // Transfer-Encoding: chunked, but forwards the JSON bytes without
+          // HTTP chunk framing. Pre-frame every such response; even small tool
+          // results take this broken proxy path.
           const framedBody = `${responseLength.toString(16)}\r\n${responseBody}\r\n0\r\n\r\n`;
           res.status(webResponse.status).send(framedBody);
           return;
