@@ -485,15 +485,26 @@ async function main() {
         const webResponse = await transport.handleRequest(webRequest, {
           parsedBody: req.body,
         });
-        const responseJson = await webResponse.json();
         const sessionId = webResponse.headers.get("mcp-session-id");
         if (sessionId) {
           res.setHeader("mcp-session-id", sessionId);
         }
-        // Let Express serialize the completed JSON-RPC result. Its JSON writer
-        // supplies an exact Content-Length, avoiding Railway's broken handling
-        // of an otherwise unframed response body.
-        res.status(webResponse.status).json(responseJson);
+        const responseBody = await webResponse.text();
+        if (!responseBody) {
+          // MCP notifications such as notifications/initialized have no JSON-RPC
+          // response body. Preserve the transport's empty 202/204 response
+          // instead of attempting to parse JSON and closing the channel.
+          res.status(webResponse.status).end();
+          return;
+        }
+
+        const contentType = webResponse.headers.get("content-type");
+        if (contentType) {
+          res.setHeader("content-type", contentType);
+        }
+        // Let Express send the completed body with an exact Content-Length,
+        // avoiding Railway's broken handling of an unframed streamed body.
+        res.status(webResponse.status).send(responseBody);
       } catch (e) {
         console.error("[mcp] Error handling request:", e);
         if (!res.headersSent) {
