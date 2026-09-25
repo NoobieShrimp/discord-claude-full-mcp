@@ -500,9 +500,12 @@ async function main() {
             jsonrpc: "2.0",
             result: null,
             id: null,
-          }).padEnd(256, " ");
+          }).padEnd(160, " ");
           res.removeHeader("transfer-encoding");
           res.setHeader("content-type", "application/json; charset=utf-8");
+          res.setHeader("content-length", Buffer.byteLength(compatibilityBody));
+          res.setHeader("cache-control", "no-transform");
+          res.setHeader("content-encoding", "identity");
           res.status(200).send(compatibilityBody);
           return;
         }
